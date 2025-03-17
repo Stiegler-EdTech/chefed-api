@@ -2,7 +2,7 @@ import requests
 import json
 
 # Base URL (change this to your deployed API URL)
-BASE_URL = "http://localhost:5000"
+BASE_URL = "https://chefed-bruw86rex-stiegler-edtech.vercel.app"
 
 # Test token (should match one in the app.py file)
 TOKEN = "test_token"
