@@ -1,5 +1,8 @@
 {
   "version": 2,
+  "projectSettings": {
+    "framework": "other"
+  },
   "builds": [
     {
       "src": "app.py",
