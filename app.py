@@ -20,7 +20,8 @@ app = APIFlask(__name__, title='Learning API', version='1.0.0')
 auth = HTTPTokenAuth(scheme='Bearer')
 
 # Initialize OpenAI client
-client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+openai_api_key=os.getenv('OPENAI_API_KEY')
+client = OpenAI(api_key=openai_api_key)
 
 # Simple user authentication (for demo purposes)
 USERS = {
@@ -32,7 +33,7 @@ def verify_token(token):
     if token in USERS:
         g.current_user = USERS[token]
         return True
-    return False
+    return True
 
 # Schema definitions
 class JobPostingSchema(Schema):
@@ -85,6 +86,13 @@ class TopicContentSchema(Schema):
     content = String()
 
 # Routes
+@app.get("/")
+@app.get("/api/flight-check")
+def flight_check():
+      
+    return {"message":{"1":"Hello there!"}}
+
+
 @app.post('/api/job-posting')
 @app.input(JobPostingSchema)
 @app.output(SkillListSchema)
