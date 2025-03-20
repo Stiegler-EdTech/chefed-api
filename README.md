@@ -31,3 +31,10 @@ A web API built with APIFlask, Python, OpenAI, and Neon DB that helps users lear
 
 This application is configured for deployment on Vercel.
 
+## Orchestration Design
+
+1) given job desc, return structured list of skills
+2) given skill, return course outline
+3) given topic, return block of content with pagination
+4) given topic, return assessment
+5) given course and user, return progress report

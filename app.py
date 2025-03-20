@@ -11,6 +11,7 @@ import requests
 from bs4 import BeautifulSoup
 from openai import OpenAI
 from db import get_db_connection
+import coe
 
 # Load environment variables
 load_dotenv()
@@ -90,86 +91,29 @@ class TopicContentSchema(Schema):
 @app.get("/api/flight-check")
 def flight_check():
       
-    return {"message":{"1":"Hello there!"}}
+    return coe.flight_check()
 
+@app.post("/api/parse-job")
+@app.input(JobPostingSchema)
+def parse_job(json_data):
+    
+    skills_data=coe.parse_job(json_data['url'])
+    return skills_data 
+    
 
 @app.post('/api/job-posting')
 @app.input(JobPostingSchema)
-@app.output(SkillListSchema)
+#@app.output(SkillListSchema)
 @auth.login_required
 def submit_job_posting(data):
     """Submit a job posting URL to extract skills"""
-    url = data['url']
+    #url = data['url']
     
     # Extract job posting content
     try:
-        response = requests.get(url)
-        soup = BeautifulSoup(response.text, 'html.parser')
+        skills_data=coe.parse_job(data)
         
-        # Extract job title and description (simplified)
-        title = soup.title.string if soup.title else "Unknown Job Title"
-        description = ' '.join([p.text for p in soup.find_all('p')])
-        
-        # Store job posting in database
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute(
-            "INSERT INTO job_postings (url, title, description) VALUES (%s, %s, %s) RETURNING id",
-            (url, title, description)
-        )
-        job_id = cursor.fetchone()[0]
-        
-        # Use OpenAI to extract skills from the job description
-        prompt = f"""
-        Extract a list of technical skills from the following job description. 
-        Return only the list of skills as a JSON array of strings.
-        
-        Job Title: {title}
-        
-        Job Description:
-        {description}
-        """
-        
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": "You are a helpful assistant that extracts technical skills from job descriptions."},
-                {"role": "user", "content": prompt}
-            ],
-            response_format={"type": "json_object"}
-        )
-        
-        skills_json = json.loads(response.choices[0].message.content)
-        skills_list = skills_json.get('skills', [])
-        
-        # Store skills in database
-        skills_data = []
-        for skill_name in skills_list:
-            # Check if skill already exists
-            cursor.execute("SELECT id FROM skills WHERE name = %s", (skill_name,))
-            result = cursor.fetchone()
-            
-            if result:
-                skill_id = result[0]
-            else:
-                cursor.execute(
-                    "INSERT INTO skills (name) VALUES (%s) RETURNING id",
-                    (skill_name,)
-                )
-                skill_id = cursor.fetchone()[0]
-            
-            # Link skill to job posting
-            cursor.execute(
-                "INSERT INTO job_skills (job_id, skill_id) VALUES (%s, %s) ON CONFLICT DO NOTHING",
-                (job_id, skill_id)
-            )
-            skills_data.append({"id": skill_id, "name": skill_name})
-        
-        conn.commit()
-        cursor.close()
-        conn.close()
-        
-        return {"skills": skills_data}
+        return skills_data
     
     except Exception as e:
         print(f"Error processing job posting: {str(e)}")

@@ -1,0 +1,19 @@
+Output as Structured json: Provide all above elements following strictly the json example below.
+   Return as a strict json object following the example below:
+   {{
+      "topic": "topic_name",
+      "subtopic": "subtopic_name",
+      "blocks": [
+         {{
+            "block_type": "text",
+            "content": "Text content for the first section."
+         }},
+         {{
+            "block_type": "image",
+            "content": "url to illustrate",
+         }},
+         {{
+            "block_type": "text",
+            "content": "Text content for the this block."
+         }}]
+      }}
