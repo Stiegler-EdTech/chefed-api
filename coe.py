@@ -7,6 +7,7 @@ import util
 import uuid
 import os
 import json
+from pinecone import Pinecone
 
 # Load environment variables
 load_dotenv()
@@ -87,60 +88,90 @@ def generate_outline(skill):
    Overview: Provide an introduction, context, and explanation of the skill. Articulate why the skill is valuable in real-world professional settings.
    Topics and Subtopics: List each major competency topic and its subtopics in a logical progression, ensuring comprehensive coverage of both theoretical concepts and practical applications.
    Learning Objectives: For each topic, clearly specify what learners should know or be able to do by the end of each topic.
-   Hands-On Practice: For each major topic, include at least one hands-on activity, exercise, or project that allows learners to practice the skill in a realistic context.
+   Hands-On Practice: For any topic where learning the skill takes hands-on practice, include 0-2 suggested hands-on activities, exercise, or projects that allows learners to practice the skill in a realistic context.
    Additional Resources: Suggest case studies, industry examples, or supplemental materials such as articles, videos, open-source tools, or relevant communities, to deepen learners’ knowledge and support continued exploration.
-   Output as Structured json: Provide all above elements following strictly the json example below.
-   Return as a strict json object following the example below:
-   {{
-      "overview": "A concise introduction explaining the skill, its context, and why it is valuable in professional settings.",
-      "topics": [
-         {{
-            "topic_name": "Main Topic Title",
-            "subtopics": [
-            "Subtopic 1",
-            "Subtopic 2"
-            ],
-            "learning_objectives": [
-            "Objective A: What learners should know/do by the end of this topic.",
-            "Objective B: What learners should know/do by the end of this topic."
-            ],
-            "hands_on_practice": [
-            {{
-               "activity_title": "Practical Exercise or Project",
-               "description": "A brief explanation of the hands-on activity that reinforces the topic’s concepts."
-            }}
-            ]
-         }},
-         {{
-            "topic_name": "Another Main Topic Title",
-            "subtopics": [
-            "Subtopic 3",
-            "Subtopic 4"
-            ],
-            "learning_objectives": [
-            "Objective C: What learners should know/do by the end of this topic.",
-            "Objective D: What learners should know/do by the end of this topic."
-            ],
-            "hands_on_practice": [
-            {{
-               "activity_title": "Second Practical Exercise",
-               "description": "A brief explanation of another hands-on activity to deepen understanding."
-            }}
-            ]
-         }}
-      ],
-      "additional_resources": [
-         "Reference 1 (e.g., a link to a case study, article, or video)",
-         "Reference 2 (e.g., open-source tools or relevant community resources)"
-      ]
-      }}
    """
+
+   structured_output_spec = """
+   {
+      "format": {
+         "type": "json_schema",
+         "name": "outline_result",
+         "schema": {
+         "type": "object",
+         "properties": {
+            "overview": {
+               "type": "string"
+            },
+            "topics": {
+               "type": "array",
+               "items": {
+               "type": "object",
+               "properties": {
+                  "topic_name": {
+                     "type": "string"
+                  },
+                  "subtopics": {
+                     "type": "array",
+                     "items": {
+                     "type": "string"
+                     }
+                  },
+                  "learning_objectives": {
+                     "type": "array",
+                     "items": {
+                     "type": "string"
+                     }
+                  },
+                  "hands_on_practice": {
+                     "type": "array",
+                     "items": {
+                     "type": "object",
+                     "properties": {
+                        "activity_title": {
+                           "type": "string"
+                        },
+                        "description": {
+                           "type": "string"
+                        }
+                     },
+                     "required": [
+                        "activity_title",
+                        "description"
+                     ],
+                     "additionalProperties": false
+                     }
+                  }
+               },
+               "required": ["topic_name", "subtopics", "learning_objectives","hands_on_practice"],
+               "additionalProperties": false
+               }
+            },
+            "additional_resources": {
+               "type": "array",
+               "items": {
+               "type": "string"
+               }
+            }
+         },
+         "required": ["overview", "topics","additional_resources"],
+         "additionalProperties": false,
+         "strict": true
+         }
+      }
+   }
+   """
+   
+   print(json.loads(structured_output_spec))
    response = client.responses.create(
    model="o3-mini",
    input=[
       {"role": "system", "content": sys_prompt},
       {"role": "user", "content": skill}
-   ])
+   ],
+   reasoning={"effort": "medium"},
+   text=json.loads(structured_output_spec),
+   )
 
    global outline_result
    outline_result = json.loads(response.output_text)  
@@ -168,6 +199,7 @@ def generate_learning_block(topic, subtopic):
    When given a subtopic and its parent topic, you must provide:
    Sections of educational content in progression that covers the subtopic in depth.
    A section is either blocks of text or a link to a web-searched image that illustrates the content.
+   Make the blocks of text as long as needed - do not arbitrarily break them up. Only break them up when an image would be approriate to explain a concept.
    Try to include 1-2 images about every 5-15 paragraphs. 
    """
 
