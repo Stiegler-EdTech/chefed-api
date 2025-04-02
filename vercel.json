@@ -3,12 +3,6 @@
   "projectSettings": {
     "framework": "other"
   },
-  "builds": [
-    {
-      "src": "app.py",
-      "use": "@vercel/python"
-    }
-  ],
   "routes": [
     {
       "src": "/(.*)",
