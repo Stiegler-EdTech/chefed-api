@@ -13,6 +13,7 @@ from openai import OpenAI
 from db import get_db_connection
 import coe
 
+
 # Load environment variables
 load_dotenv()
 
