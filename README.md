@@ -25,7 +25,7 @@ A web API built with APIFlask, Python, OpenAI, and Neon DB that helps users lear
 3. Set up environment variables:
    - `OPENAI_API_KEY`: Your OpenAI API key
    - Database connection variables (provided by Neon DB)
-4. Run the application: `python app.py`
+4. Run the application: `python app.py` or `flask run --port 5001`. The second allows auto updates from saves. 
 
 ## Deployment
 
