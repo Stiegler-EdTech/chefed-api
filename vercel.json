@@ -1,8 +1,5 @@
 {
   "version": 2,
-  "projectSettings": {
-    "framework": "other"
-  },
   "routes": [
     {
       "src": "/(.*)",
