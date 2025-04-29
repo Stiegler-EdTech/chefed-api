@@ -13,3 +13,4 @@ protoc_gen_openapiv2==0.0.1
 pinecone==6.0.2
 grpcio==1.71.0
 httpx==0.25.2
+colorlog==6.9.0

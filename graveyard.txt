@@ -1,3 +1,11 @@
+  "builds": [
+    {
+      "src": "app.py",
+      "use": "@vercel/python"
+    }
+  ],
+
+
 Output as Structured json: Provide all above elements following strictly the json example below.
    Return as a strict json object following the example below:
    {{

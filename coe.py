@@ -8,9 +8,11 @@ import uuid
 import os
 import json
 from pinecone import Pinecone
+from util import Loggin
 
 # Load environment variables
 load_dotenv()
+logger = Loggin()
 
 outline_result=None
 # Initialize OpenAI client
@@ -74,10 +76,22 @@ def parse_job(desc_or_url):
    for skill in skills_list:
     skill['id'] = str(uuid.uuid4())
 
-   util.log_verbose(skills_list)
+   logger.debug(skills_list)
    
    db.save_skills_list(skills_list)
    return {"skills": skills_list}
+
+import logging
+def harness(some_val:str):
+   """
+   Main harness function to process job description or URL and generate course outline.
+   """
+   logging.info(f"X123 outline: {some_val}")
+   logger.info("Starting job description parsing...")
+   skills_result = {"param":some_val,"skill1":"Microsoft .Net", "skill2":"Personal Development"}
+   logger.debug_(skills_result)
+   return 
+
 
 def generate_outline(skill):
         

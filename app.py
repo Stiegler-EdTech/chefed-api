@@ -1,6 +1,5 @@
-from apiflask import APIFlask, Schema, HTTPTokenAuth, abort
-from apiflask.fields import String, Integer, List, Nested, Float
-from apiflask.validators import Length, Range
+from apiflask import APIFlask, HTTPTokenAuth, abort
+from apiflask.fields import String, Integer, List, Nested, Float, Field
 from flask import request, g
 import os
 from dotenv import load_dotenv
@@ -8,18 +7,21 @@ from datetime import datetime
 import json
 import re
 import requests
-from bs4 import BeautifulSoup
 from openai import OpenAI
 from db import get_db_connection
 import coe
+import geo
+import schemas
+from util import FlaskLoggin, LogLevel, Response_
+from inspecto import inspecto
 
-
-# Load environment variables
 load_dotenv()
 
 # Initialize app
-app = APIFlask(__name__, title='Learning API', version='1.0.0')
+app = APIFlask(__name__, title='ChefEd API', version='1.0.0')
 auth = HTTPTokenAuth(scheme='Bearer')
+app.config['BASE_RESPONSE_SCHEMA'] = schemas.BaseResponse
+logger = FlaskLoggin(app)  
 
 # Initialize OpenAI client
 openai_api_key=os.getenv('OPENAI_API_KEY')
@@ -37,65 +39,23 @@ def verify_token(token):
         return True
     return True
 
-# Schema definitions
-class JobPostingSchema(Schema):
-    url = String(required=True, validate=Length(min=1))
 
-class SkillSchema(Schema):
-    id = Integer()
-    name = String()
-
-class SkillListSchema(Schema):
-    skills = List(Nested(SkillSchema))
-
-class SkillSelectionSchema(Schema):
-    skill_id = Integer(required=True)
-
-class CourseTopicSchema(Schema):
-    id = Integer()
-    title = String()
-    description = String()
-    sequence_number = Integer()
-
-class CourseOutlineSchema(Schema):
-    id = Integer()
-    skill_id = Integer()
-    title = String()
-    description = String()
-    topics = List(Nested(CourseTopicSchema))
-
-class SkillAssessmentSchema(Schema):
-    topic_id = Integer(required=True)
-    proficiency_level = Integer(required=True, validate=Range(min=1, max=5))
-
-class SkillAssessmentListSchema(Schema):
-    assessments = List(Nested(SkillAssessmentSchema))
-
-class CourseProgressSchema(Schema):
-    course_outline_id = Integer(required=True)
-
-class TopicProgressSchema(Schema):
-    topic_id = Integer(required=True)
-
-class ProgressReportSchema(Schema):
-    course_outline_id = Integer()
-    completion_percentage = Float()
-    current_topic_id = Integer()
-    next_topic_id = Integer()
-
-class TopicContentSchema(Schema):
-    topic_id = Integer()
-    content = String()
 
 # Routes
 @app.get("/")
 @app.get("/api/flight-check")
+@inspecto
 def flight_check():
       
     return coe.flight_check()
 
+@app.get("/api/harness")
+def harness():
+    result=coe.harness("This is a test harness for the ChefEd API.")
+    return Response_({"d": result})
+
 @app.post("/api/parse-job")
-@app.input(JobPostingSchema)
+@app.input(schemas.JobPostingSchema)
 def parse_job(json_data):
     
     skills_data=coe.parse_job(json_data['url'])
@@ -103,7 +63,7 @@ def parse_job(json_data):
     
 
 @app.post('/api/job-posting')
-@app.input(JobPostingSchema)
+@app.input(schemas.JobPostingSchema)
 #@app.output(SkillListSchema)
 @auth.login_required
 def submit_job_posting(data):
@@ -121,8 +81,8 @@ def submit_job_posting(data):
         abort(500, message=f"Error processing job posting: {str(e)}")
 
 @app.post('/api/select-skill')
-@app.input(SkillSelectionSchema)
-@app.output(CourseOutlineSchema)
+@app.input(schemas.SkillSelectionSchema)
+@app.output(schemas.CourseOutlineSchema)
 @auth.login_required
 def select_skill(data):
     """Generate a course outline based on the selected skill"""
@@ -241,7 +201,7 @@ def select_skill(data):
         abort(500, message=f"Error generating course outline: {str(e)}")
 
 @app.post('/api/assess-skills')
-@app.input(SkillAssessmentListSchema)
+@app.input(schemas.SkillAssessmentListSchema)
 @app.output({}, status_code=200)
 @auth.login_required
 def assess_skills(data):
@@ -297,8 +257,8 @@ def assess_skills(data):
         abort(500, message=f"Error storing skill assessments: {str(e)}")
 
 @app.post('/api/begin-course')
-@app.input(CourseProgressSchema)
-@app.output(TopicContentSchema)
+@app.input(schemas.CourseProgressSchema)
+@app.output(schemas.TopicContentSchema)
 @auth.login_required
 def begin_course(data):
     """Begin or resume a course and get content for the current topic"""
@@ -419,8 +379,8 @@ def begin_course(data):
         abort(500, message=f"Error beginning course: {str(e)}")
 
 @app.post('/api/advance-topic')
-@app.input(TopicProgressSchema)
-@app.output(ProgressReportSchema)
+@app.input(schemas.TopicProgressSchema)
+@app.output(schemas.ProgressReportSchema)
 @auth.login_required
 def advance_topic(data):
     """Mark current topic as complete and advance to the next topic"""
@@ -513,6 +473,37 @@ def advance_topic(data):
         print(f"Error advancing topic: {str(e)}")
         abort(500, message=f"Error advancing topic: {str(e)}")
 
+
+
+#@app.post('/api/get-location')
+@app.post('/api/get-location')
+@app.input(schemas.LocationRequestSchema)
+@app.output(schemas.LocationSchema)
+def get_location(json_data):
+    """
+    Get the latitude and longitude of a place using the Google Maps Geocoding API.
+    :param place: The place to geocode. Examples: "1600 Amphitheatre Parkway, Mountain View, CA", "San Francisco, CA", "Paris USA"
+    :return: A Location object with the latitude, longitude, and formatted address of the place.
+    """
+    logger.info(json_data)
+    loc = geo.get_location(json_data["place"])
+    if loc:
+        return Response_(
+        data={
+            'latitude': loc.latitude,
+            'longitude': loc.longitude,
+            'formatted_address': loc.formatted_address
+        }
+    )
+
+    return Response_.NotFound()
+
+
 if __name__ == '__main__':
     app.run(debug=True)
 
+
+
+
+
+    

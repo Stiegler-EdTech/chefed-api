@@ -38,3 +38,11 @@ This application is configured for deployment on Vercel.
 3) given topic, return block of content with pagination
 4) given topic, return assessment
 5) given course and user, return progress report
+
+
+## Issues
+vercel develop domain not connecting to develop branch
+
+
+## References
+Bit on decorator to check api token: https://stackoverflow.com/questions/78036628/flask-typeerror-got-multiple-values-for-argument
